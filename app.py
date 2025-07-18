@@ -10,7 +10,13 @@ UPLOAD_FOLDER = 'static/uploads'
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
-# -------------------- DB --------------------
+# -------------------- Database Connection --------------------
+def get_db():
+    conn = sqlite3.connect("database.db")
+    conn.row_factory = sqlite3.Row
+    return conn
+
+# -------------------- DB Initialization --------------------
 def init_db():
     conn = get_db()
     cur = conn.cursor()
@@ -45,7 +51,7 @@ def init_db():
         )
     ''')
 
-    # Optional: Add dummy vendors if table is empty
+    # Insert dummy vendors if empty
     cur.execute("SELECT COUNT(*) FROM vendors")
     if cur.fetchone()[0] == 0:
         dummy_vendors = [
@@ -58,6 +64,7 @@ def init_db():
     conn.commit()
     conn.close()
 
+# Call DB setup
 init_db()
 
 # -------------------- Routes --------------------
