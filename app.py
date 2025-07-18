@@ -11,12 +11,6 @@ if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
 # -------------------- DB --------------------
-
-def get_db():
-    conn = sqlite3.connect("database.db")
-    conn.row_factory = sqlite3.Row
-    return conn
-
 def init_db():
     conn = get_db()
     cur = conn.cursor()
@@ -51,13 +45,13 @@ def init_db():
         )
     ''')
 
-    # Insert dummy vendors if not exist
+    # Optional: Add dummy vendors if table is empty
     cur.execute("SELECT COUNT(*) FROM vendors")
     if cur.fetchone()[0] == 0:
         dummy_vendors = [
             ('Vanes Engineering', '29AABCU9603R1ZK', 'Chennai, Tamil Nadu'),
             ('Kumar Duct Systems', '07AAACG1234F1ZV', 'Delhi, India'),
-            ('Sree Air Tech', '33AAGCS4445K1Z2', 'Coimbatore, TN'),
+            ('Sree Air Tech', '33AAGCS4445K1Z2', 'Coimbatore, TN')
         ]
         cur.executemany("INSERT INTO vendors (name, gst, address) VALUES (?, ?, ?)", dummy_vendors)
 
