@@ -21,7 +21,7 @@ def init_db():
     conn = get_db()
     cur = conn.cursor()
     cur.execute('''
-        CREATE TABLE IF NOT EXISTS project (
+        CREATE TABLE IF NOT EXISTS projects (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             enquiry_id TEXT,
             quotation TEXT,
