@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, session
+from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
 from datetime import datetime
 import sqlite3
 import os
@@ -20,52 +20,57 @@ def get_db():
 def init_db():
     conn = get_db()
     cur = conn.cursor()
+
+    # Create projects table
     cur.execute('''
         CREATE TABLE IF NOT EXISTS projects (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             enquiry_id TEXT,
             quotation TEXT,
-            location TEXT,
+            project_location TEXT,
             source_diagram TEXT,
             start_date TEXT,
             end_date TEXT,
-            vendor TEXT,
+            vendor_id TEXT,
             gst TEXT,
             address TEXT,
             incharge TEXT,
-            contact TEXT,
-            email TEXT,
+            contact_number TEXT,
+            mail_id TEXT,
             notes TEXT
         )
     ''')
+
+    # Create vendors table
+    cur.execute('''
+        CREATE TABLE IF NOT EXISTS vendors (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT,
+            gst TEXT,
+            address TEXT
+        )
+    ''')
+
+    # Insert dummy vendors if not exist
+    cur.execute("SELECT COUNT(*) FROM vendors")
+    if cur.fetchone()[0] == 0:
+        dummy_vendors = [
+            ('Vanes Engineering', '29AABCU9603R1ZK', 'Chennai, Tamil Nadu'),
+            ('Kumar Duct Systems', '07AAACG1234F1ZV', 'Delhi, India'),
+            ('Sree Air Tech', '33AAGCS4445K1Z2', 'Coimbatore, TN'),
+        ]
+        cur.executemany("INSERT INTO vendors (name, gst, address) VALUES (?, ?, ?)", dummy_vendors)
+
     conn.commit()
     conn.close()
 
 init_db()
-
-# -------------------- Dummy Vendors --------------------
-
-dummy_vendors = [
-    {'name': 'Vanes Engineering', 'gst': '29AABCU9603R1ZK', 'address': 'Chennai, Tamil Nadu'},
-    {'name': 'Kumar Duct Systems', 'gst': '07AAACG1234F1ZV', 'address': 'Delhi, India'},
-    {'name': 'Sree Air Tech', 'gst': '33AAGCS4445K1Z2', 'address': 'Coimbatore, TN'}
-]
 
 # -------------------- Routes --------------------
 
 @app.route('/')
 def home():
     return redirect(url_for('login'))
-
-
-@app.route('/get_next_enquiry_id')
-def get_next_enquiry_id():
-    conn = get_db()
-    cur = conn.cursor()
-    cur.execute("SELECT COUNT(*) FROM project")
-    count = cur.fetchone()[0] + 1
-    enquiry_id = f"ve/TN/2526/e{str(count).zfill(3)}"
-    return jsonify({"enquiry_id": enquiry_id})
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -92,7 +97,14 @@ def dashboard():
         return redirect(url_for('login'))
     return render_template('dashboard.html')
 
-
+@app.route('/get_next_enquiry_id')
+def get_next_enquiry_id():
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT COUNT(*) FROM projects")
+    count = cur.fetchone()[0] + 1
+    enquiry_id = f"VE/TN/2526/E{str(count).zfill(3)}"
+    return jsonify({"enquiry_id": enquiry_id})
 
 @app.route('/project')
 def project_management():
@@ -179,7 +191,6 @@ def edit_project():
     flash("Project updated successfully!", "success")
     return redirect(url_for('project_management'))
 
-
 @app.route('/delete_project', methods=['POST'])
 def delete_project():
     project_id = request.form.get('project_id')
@@ -191,13 +202,13 @@ def delete_project():
     conn.close()
     flash("Project deleted successfully!", "success")
     return redirect(url_for('project_management'))
-# -------------------- Run --------------------
-
 
 @app.route('/init_db')
 def trigger_db_init():
     init_db()
     return "Database initialized!"
+
+# -------------------- Run --------------------
 
 if __name__ == '__main__':
     app.run(debug=True)
