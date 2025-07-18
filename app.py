@@ -193,5 +193,11 @@ def delete_project():
     return redirect(url_for('project_management'))
 # -------------------- Run --------------------
 
+
+@app.route('/init_db')
+def trigger_db_init():
+    init_db()
+    return "Database initialized!"
+
 if __name__ == '__main__':
     app.run(debug=True)
