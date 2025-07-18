@@ -152,52 +152,44 @@ def create_project():
 
 @app.route('/edit_project', methods=['POST'])
 def edit_project():
+    project_id = request.form.get('project_id')
+    quotation = request.form.get('quotation')
+    project_location = request.form.get('project_location')
+    start_date = request.form.get('start_date')
+    end_date = request.form.get('end_date')
+    vendor_id = request.form.get('vendor_id')
+    gst = request.form.get('gst')
+    address = request.form.get('address')
+    incharge = request.form.get('incharge')
+    contact_number = request.form.get('contact_number')
+    mail_id = request.form.get('mail_id')
+    notes = request.form.get('notes')
+
     conn = get_db()
     cur = conn.cursor()
 
-    data = request.form
-    project_id = data.get('project_id')
-    diagram_file = request.files.get('source_diagram')
-    diagram_path = data.get('existing_diagram')
-
-    if diagram_file and diagram_file.filename:
-        diagram_path = os.path.join("static/uploads", diagram_file.filename)
-        diagram_file.save(diagram_path)
-
     cur.execute("""
-        UPDATE projects SET
-            quotation=?, project_location=?, source_diagram=?, start_date=?, end_date=?,
-            vendor_id=?, gst=?, address=?, incharge=?, contact_number=?, mail_id=?, notes=?
+        UPDATE projects SET quotation=?, project_location=?, start_date=?, end_date=?, 
+        vendor_id=?, gst=?, address=?, incharge=?, contact_number=?, mail_id=?, notes=?
         WHERE id=?
-    """, (
-        data.get('quotation'),
-        data.get('project_location'),
-        diagram_path,
-        data.get('start_date'),
-        data.get('end_date'),
-        data.get('vendor_id'),
-        data.get('gst'),
-        data.get('address'),
-        data.get('incharge'),
-        data.get('contact_number'),
-        data.get('mail_id'),
-        data.get('notes'),
-        project_id
-    ))
+    """, (quotation, project_location, start_date, end_date, vendor_id, gst, address, incharge, contact_number, mail_id, notes, project_id))
+
     conn.commit()
     conn.close()
-    flash("Project updated!", "success")
+    flash("Project updated successfully!", "success")
     return redirect(url_for('project_management'))
+
 
 @app.route('/delete_project', methods=['POST'])
 def delete_project():
     project_id = request.form.get('project_id')
+
     conn = get_db()
     cur = conn.cursor()
     cur.execute("DELETE FROM projects WHERE id = ?", (project_id,))
     conn.commit()
     conn.close()
-    flash("Project deleted!", "danger")
+    flash("Project deleted successfully!", "success")
     return redirect(url_for('project_management'))
 # -------------------- Run --------------------
 
