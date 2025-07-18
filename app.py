@@ -57,6 +57,16 @@ dummy_vendors = [
 def home():
     return redirect(url_for('login'))
 
+
+@app.route('/get_next_enquiry_id')
+def get_next_enquiry_id():
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT COUNT(*) FROM project")
+    count = cur.fetchone()[0] + 1
+    enquiry_id = f"ve/TN/2526/e{str(count).zfill(3)}"
+    return jsonify({"enquiry_id": enquiry_id})
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
