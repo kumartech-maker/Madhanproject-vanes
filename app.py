@@ -18,6 +18,11 @@ class Employee(db.Model):
     password = db.Column(db.String(100))
     role = db.Column(db.String(50))
 
+
+@app.route('/project')
+def project_management():
+    return render_template('project.html')
+
 # ✅ Routes
 @app.route('/')
 def home():
