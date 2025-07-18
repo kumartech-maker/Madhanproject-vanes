@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
+from flask import Flask, render_template, request, redirect, url_for, flash, session
 from datetime import datetime
 import sqlite3
 import os
@@ -6,7 +6,7 @@ import os
 app = Flask(__name__)
 app.secret_key = 'secretkey'
 
-UPLOAD_FOLDER = 'uploads'
+UPLOAD_FOLDER = 'static/uploads'
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
@@ -96,68 +96,49 @@ def project_management():
 
 @app.route('/create_project', methods=['POST'])
 def create_project():
-    conn = get_db()
-    cur = conn.cursor()
-
-    cur.execute("SELECT COUNT(*) FROM projects")
-    count = cur.fetchone()[0] + 1
-    enquiry_id = f"ve/TN/2526/e{str(count).zfill(3)}"
-    print("Generated Enquiry ID:", enquiry_id)
-
-    quotation = request.form.get('quotation')
-    project_location = request.form.get('project_location')
-    source_diagram = request.files.get('source_diagram')
-    start_date = request.form.get('start_date')
-    end_date = request.form.get('end_date')
-    vendor_id = request.form.get('vendor_id')
-    gst = request.form.get('gst')
-    address = request.form.get('address')
-    incharge = request.form.get('incharge')
-    contact_number = request.form.get('contact_number')
-    mail_id = request.form.get('mail_id')
-    notes = request.form.get('notes')
-
-    diagram_path = None
-    if source_diagram and source_diagram.filename:
-        diagram_path = os.path.join("static/uploads", source_diagram.filename)
-        source_diagram.save(diagram_path)
-
-    cur.execute("""
-        INSERT INTO projects (enquiry_id, quotation, project_location, source_diagram, start_date, end_date, vendor_id, gst, address, incharge, contact_number, mail_id, notes)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """, (enquiry_id, quotation, project_location, diagram_path, start_date, end_date, vendor_id, gst, address, incharge, contact_number, mail_id, notes))
-
-    conn.commit()
-    conn.close()
-    flash('Project added successfully!', 'success')
-    return redirect(url_for('project_management'))
-
-@app.route('/add_project', methods=['POST'])
-def add_project():
     if 'user' not in session:
         return redirect(url_for('login'))
 
-    data = request.form
-    file = request.files['source_diagram']
-    file_name = ""
-
-    if file and file.filename != "":
-        file_name = datetime.now().strftime("%Y%m%d%H%M%S_") + file.filename
-        file.save(os.path.join(UPLOAD_FOLDER, file_name))
-
     conn = get_db()
     cur = conn.cursor()
+
+    # Auto-generate Enquiry ID
+    cur.execute("SELECT COUNT(*) FROM project")
+    count = cur.fetchone()[0] + 1
+    enquiry_id = f"ve/TN/2526/e{str(count).zfill(3)}"
+
+    # Get form data
+    quotation = request.form.get('quotation')
+    location = request.form.get('project_location')
+    start_date = request.form.get('start_date')
+    end_date = request.form.get('end_date')
+    vendor = request.form.get('vendor_id')
+    gst = request.form.get('gst')
+    address = request.form.get('address')
+    incharge = request.form.get('incharge')
+    contact = request.form.get('contact_number')
+    email = request.form.get('mail_id')
+    notes = request.form.get('notes')
+
+    # Handle file upload
+    source_diagram = request.files.get('source_diagram')
+    file_name = ""
+    if source_diagram and source_diagram.filename:
+        file_name = datetime.now().strftime("%Y%m%d%H%M%S_") + source_diagram.filename
+        source_diagram.save(os.path.join(UPLOAD_FOLDER, file_name))
+
+    # Insert into DB
     cur.execute('''
         INSERT INTO project (enquiry_id, quotation, location, source_diagram,
         start_date, end_date, vendor, gst, address,
         incharge, contact, email, notes)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ''', (
-        data.get('enquiry_id'), data.get('quotation'), data.get('location'), file_name,
-        data.get('start_date'), data.get('end_date'), data.get('vendor'),
-        data.get('gst'), data.get('address'), data.get('incharge'),
-        data.get('contact'), data.get('email'), data.get('notes')
+        enquiry_id, quotation, location, file_name,
+        start_date, end_date, vendor, gst, address,
+        incharge, contact, email, notes
     ))
+
     conn.commit()
     conn.close()
     flash("Project added successfully!", "success")
