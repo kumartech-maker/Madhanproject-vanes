@@ -1,292 +1,243 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Project Management</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        .readonly-input {
-            background-color: #f5f5f5;
-        }
-        .form-control {
-            margin-bottom: 10px;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <title>Project Management</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 </head>
 <body>
-<div class="container mt-5">
-    <h2>Project Management</h2>
+<div class="container mt-4">
 
-    {% with messages = get_flashed_messages(with_categories=true) %}
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h3>Project Management</h3>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addProjectModal">+ Add Project</button>
+  </div>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
-        {% for category, message in messages %}
-        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-        {% endfor %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }}">{{ message }}</div>
+      {% endfor %}
     {% endif %}
-    {% endwith %}
+  {% endwith %}
 
-    <button class="btn btn-primary my-3" data-bs-toggle="modal" data-bs-target="#addProjectModal">+ Add Project</button>
-
-    <table class="table table-bordered">
-        <thead class="table-dark">
-            <tr>
-                <th>Enquiry ID</th>
-                <th>Quotation</th>
-                <th>Location</th>
-                <th>Vendor</th>
-                <th>Start - End</th>
-                <th>Incharge</th>
-                <th>Contact</th>
-                <th>Mail</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-        {% for project in projects %}
+  <table class="table table-bordered table-striped">
+    <thead class="table-dark">
+      <tr>
+        <th>Enquiry ID</th>
+        <th>Quotation</th>
+        <th>Location</th>
+        <th>Vendor</th>
+        <th>Start</th>
+        <th>End</th>
+        <th>Incharge</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in projects %}
         <tr>
-            <td>{{ project['enquiry_id'] }}</td>
-            <td>{{ project['quotation'] }}</td>
-            <td>{{ project['project_location'] }}</td>
-            <td>{{ project['vendor_id'] }}</td>
-            <td>{{ project['start_date'] }} - {{ project['end_date'] }}</td>
-            <td>{{ project['incharge'] }}</td>
-            <td>{{ project['contact_number'] }}</td>
-            <td>{{ project['mail_id'] }}</td>
-            <td>
-                <button class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#editProjectModal" 
-                    onclick="fillEditModal({{ project | tojson }})">Edit</button>
-                <button class="btn btn-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteProjectModal" 
-                    onclick="fillDeleteModal('{{ project['enquiry_id'] }}')">Delete</button>
-                <button class="btn btn-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#addMeasurementModal" 
-                    onclick="fillMeasurementModal('{{ project['enquiry_id'] }}')">Add Sheet</button>
-            </td>
+          <td>{{ p['enquiry_id'] }}</td>
+          <td>{{ p['quotation'] }}</td>
+          <td>{{ p['project_location'] }}</td>
+          <td>{{ p['vendor_id'] }}</td>
+          <td>{{ p['start_date'] }}</td>
+          <td>{{ p['end_date'] }}</td>
+          <td>{{ p['incharge'] }}</td>
+          <td>
+            <button class="btn btn-sm btn-info editBtn" data-project='{{ p | tojson | safe }}'>Edit</button>
+            <form method="POST" action="/delete_project" style="display:inline-block;">
+              <input type="hidden" name="project_id" value="{{ p['id'] }}">
+              <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+            </form>
+            <button class="btn btn-sm btn-secondary">Add Measurement Sheet</button>
+          </td>
         </tr>
-        {% endfor %}
-        </tbody>
-    </table>
+      {% endfor %}
+    </tbody>
+  </table>
 </div>
 
 <!-- Add Project Modal -->
-<div class="modal fade" id="addProjectModal" tabindex="-1" aria-labelledby="addProjectModalLabel" aria-hidden="true">
+<div class="modal fade" id="addProjectModal" tabindex="-1" aria-hidden="true">
   <div class="modal-dialog modal-lg">
-    <div class="modal-content">
-      <form method="POST" action="{{ url_for('create_project') }}" enctype="multipart/form-data">
-        <div class="modal-header">
-          <h5 class="modal-title">New Project</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+    <form class="modal-content" method="POST" action="/create_project" enctype="multipart/form-data">
+      <div class="modal-header"><h5>Add Project</h5></div>
+      <div class="modal-body row g-3">
+        <div class="col-md-6">
+          <label>Enquiry ID</label>
+          <input type="text" name="enquiry_id" id="enquiry_id" class="form-control" readonly>
         </div>
-        <div class="modal-body">
-            <label>Enquiry ID (Auto)</label>
-            <input type="text" name="enquiry_id" class="form-control readonly-input" readonly value="{{ next_enquiry_id }}">
-
-            <label>Quotation</label>
-            <input type="text" name="quotation" class="form-control" required>
-
-            <label>Project Location</label>
-            <input type="text" name="project_location" class="form-control" required>
-
-            <label>Source Diagram</label>
-            <input type="file" name="source_diagram" class="form-control" accept=".pdf,.jpg,.jpeg,.png" required>
-
-            <label>Start Date</label>
-            <input type="date" name="start_date" class="form-control" required>
-
-            <label>End Date</label>
-            <input type="date" name="end_date" class="form-control" required>
-
-            <label>Vendor</label>
-            <select id="vendor_id" name="vendor_id" class="form-control" onchange="fillVendorDetails()" required>
-                <option value="">-- Select Vendor --</option>
-                <option value="ABC Ducting Co.">ABC Ducting Co.</option>
-                <option value="Super Airflow Ltd.">Super Airflow Ltd.</option>
-                <option value="CoolTech Systems">CoolTech Systems</option>
-            </select>
-
-            <label>GST</label>
-            <input type="text" id="gst" name="gst" class="form-control readonly-input" readonly>
-
-            <label>Address</label>
-            <textarea id="address" name="address" class="form-control readonly-input" readonly></textarea>
-
-            <label>Incharge</label>
-            <input type="text" name="incharge" class="form-control">
-
-            <label>Contact Number</label>
-            <input type="text" name="contact_number" class="form-control">
-
-            <label>Mail ID</label>
-            <input type="email" name="mail_id" class="form-control">
-
-            <label>Notes</label>
-            <textarea name="notes" class="form-control" rows="2"></textarea>
+        <div class="col-md-6">
+          <label>Quotation</label>
+          <input type="text" name="quotation" class="form-control" required>
         </div>
-        <div class="modal-footer">
-          <button type="submit" class="btn btn-success">Save Project</button>
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <div class="col-md-6">
+          <label>Project Location</label>
+          <input type="text" name="project_location" class="form-control" required>
         </div>
-      </form>
-    </div>
+        <div class="col-md-6">
+          <label>Source Diagram</label>
+          <input type="file" name="source_diagram" class="form-control">
+        </div>
+        <div class="col-md-6">
+          <label>Start Date</label>
+          <input type="date" name="start_date" class="form-control" required>
+        </div>
+        <div class="col-md-6">
+          <label>End Date</label>
+          <input type="date" name="end_date" class="form-control" required>
+        </div>
+        <div class="col-md-6">
+          <label>Vendor</label>
+          <select name="vendor_id" id="vendorSelect" class="form-control" required onchange="updateVendorFields(this)">
+            <option value="">-- Select --</option>
+            {% for vendor in vendors %}
+              <option value="{{ vendor.id }}" data-gst="{{ vendor.gst }}" data-address="{{ vendor.address }}">
+                {{ vendor.name }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-6">
+          <label>GST</label>
+          <input type="text" name="gst" id="gstInput" class="form-control" readonly>
+        </div>
+        <div class="col-md-12">
+          <label>Address</label>
+          <textarea name="address" id="addressInput" class="form-control" readonly></textarea>
+        </div>
+        <div class="col-md-6">
+          <label>Incharge</label>
+          <input type="text" name="incharge" class="form-control">
+        </div>
+        <div class="col-md-6">
+          <label>Contact Number</label>
+          <input type="text" name="contact_number" class="form-control">
+        </div>
+        <div class="col-md-6">
+          <label>Email ID</label>
+          <input type="email" name="mail_id" class="form-control">
+        </div>
+        <div class="col-md-6">
+          <label>Notes</label>
+          <textarea name="notes" class="form-control"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button class="btn btn-primary" type="submit">Create</button>
+      </div>
+    </form>
   </div>
 </div>
 
-<!-- Edit Project Modal -->
-<div class="modal fade" id="editProjectModal" tabindex="-1" aria-labelledby="editProjectModalLabel" aria-hidden="true">
+<!-- Edit Modal -->
+<div class="modal fade" id="editModal" tabindex="-1">
   <div class="modal-dialog modal-lg">
-    <div class="modal-content">
-      <form method="POST" action="{{ url_for('edit_project') }}" enctype="multipart/form-data">
-        <div class="modal-header">
-          <h5 class="modal-title">Edit Project</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+    <form class="modal-content" method="POST" action="/edit_project">
+      <div class="modal-header"><h5>Edit Project</h5></div>
+      <div class="modal-body row g-3">
+        <input type="hidden" name="project_id" id="edit_project_id">
+        <div class="col-md-6">
+          <label>Quotation</label>
+          <input type="text" name="quotation" id="edit_quotation" class="form-control" required>
         </div>
-        <div class="modal-body">
-            <input type="hidden" name="id" id="edit_id">
-
-            <label>Enquiry ID</label>
-            <input type="text" name="enquiry_id" id="edit_enquiry_id" class="form-control readonly-input" readonly>
-
-            <label>Quotation</label>
-            <input type="text" name="quotation" id="edit_quotation" class="form-control" required>
-
-            <label>Project Location</label>
-            <input type="text" name="project_location" id="edit_project_location" class="form-control" required>
-
-            <label>Source Diagram (Upload to replace)</label>
-            <input type="file" name="source_diagram" class="form-control" accept=".pdf,.jpg,.jpeg,.png">
-
-            <label>Start Date</label>
-            <input type="date" name="start_date" id="edit_start_date" class="form-control" required>
-
-            <label>End Date</label>
-            <input type="date" name="end_date" id="edit_end_date" class="form-control" required>
-
-            <label>Vendor</label>
-            <select id="edit_vendor_id" name="vendor_id" class="form-control" onchange="fillVendorDetailsEdit()" required>
-                <option value="">-- Select Vendor --</option>
-                <option value="ABC Ducting Co.">ABC Ducting Co.</option>
-                <option value="Super Airflow Ltd.">Super Airflow Ltd.</option>
-                <option value="CoolTech Systems">CoolTech Systems</option>
-            </select>
-
-            <label>GST</label>
-            <input type="text" id="edit_gst" name="gst" class="form-control readonly-input" readonly>
-
-            <label>Address</label>
-            <textarea id="edit_address" name="address" class="form-control readonly-input" readonly></textarea>
-
-            <label>Incharge</label>
-            <input type="text" name="incharge" id="edit_incharge" class="form-control">
-
-            <label>Contact Number</label>
-            <input type="text" name="contact_number" id="edit_contact_number" class="form-control">
-
-            <label>Mail ID</label>
-            <input type="email" name="mail_id" id="edit_mail_id" class="form-control">
-
-            <label>Notes</label>
-            <textarea name="notes" id="edit_notes" class="form-control" rows="2"></textarea>
+        <div class="col-md-6">
+          <label>Project Location</label>
+          <input type="text" name="project_location" id="edit_project_location" class="form-control" required>
         </div>
-        <div class="modal-footer">
-          <button type="submit" class="btn btn-success">Update Project</button>
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <div class="col-md-6">
+          <label>Start Date</label>
+          <input type="date" name="start_date" id="edit_start_date" class="form-control" required>
         </div>
-      </form>
-    </div>
-  </div>
-</div>
-
-<!-- Delete Project Modal -->
-<div class="modal fade" id="deleteProjectModal" tabindex="-1" aria-labelledby="deleteProjectModalLabel" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <form method="POST" action="{{ url_for('delete_project') }}">
-        <div class="modal-header">
-          <h5 class="modal-title">Delete Project</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        <div class="col-md-6">
+          <label>End Date</label>
+          <input type="date" name="end_date" id="edit_end_date" class="form-control" required>
         </div>
-        <div class="modal-body">
-            <p>Are you sure you want to delete project with Enquiry ID: <strong id="delete_enquiry_id"></strong> ?</p>
-            <input type="hidden" name="enquiry_id" id="delete_enquiry_id_input">
+        <div class="col-md-6">
+          <label>Vendor</label>
+          <select name="vendor_id" id="edit_vendor" class="form-control" required onchange="updateVendorFields(this, true)">
+            {% for vendor in vendors %}
+              <option value="{{ vendor.id }}" data-gst="{{ vendor.gst }}" data-address="{{ vendor.address }}">
+                {{ vendor.name }}
+              </option>
+            {% endfor %}
+          </select>
         </div>
-        <div class="modal-footer">
-          <button type="submit" class="btn btn-danger">Delete</button>
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <div class="col-md-6">
+          <label>GST</label>
+          <input type="text" name="gst" id="edit_gst" class="form-control" readonly>
         </div>
-      </form>
-    </div>
-  </div>
-</div>
-
-<!-- Add Measurement Sheet Modal -->
-<div class="modal fade" id="addMeasurementModal" tabindex="-1" aria-labelledby="addMeasurementModalLabel" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <form method="POST" action="{{ url_for('add_measurement_sheet') }}" enctype="multipart/form-data">
-        <div class="modal-header">
-          <h5 class="modal-title">Add Measurement Sheet</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        <div class="col-md-12">
+          <label>Address</label>
+          <textarea name="address" id="edit_address" class="form-control" readonly></textarea>
         </div>
-        <div class="modal-body">
-            <p>Adding measurement sheet for Enquiry ID: <strong id="measurement_enquiry_id"></strong></p>
-            <input type="hidden" name="enquiry_id" id="measurement_enquiry_id_input">
-
-            <label>Upload Measurement Sheet (PDF/Image)</label>
-            <input type="file" name="measurement_file" class="form-control" accept=".pdf,.jpg,.jpeg,.png" required>
-
-            <label>Notes (Optional)</label>
-            <textarea name="measurement_notes" class="form-control" rows="3"></textarea>
+        <div class="col-md-6">
+          <label>Incharge</label>
+          <input type="text" name="incharge" id="edit_incharge" class="form-control">
         </div>
-        <div class="modal-footer">
-          <button type="submit" class="btn btn-info">Add Sheet</button>
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+        <div class="col-md-6">
+          <label>Contact Number</label>
+          <input type="text" name="contact_number" id="edit_contact" class="form-control">
         </div>
-      </form>
-    </div>
+        <div class="col-md-6">
+          <label>Email ID</label>
+          <input type="email" name="mail_id" id="edit_mail" class="form-control">
+        </div>
+        <div class="col-md-6">
+          <label>Notes</label>
+          <textarea name="notes" id="edit_notes" class="form-control"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button class="btn btn-primary" type="submit">Update</button>
+      </div>
+    </form>
   </div>
 </div>
 
 <script>
-    const vendorData = {
-        "ABC Ducting Co.": { gst: "29ABCDE1234F1Z5", address: "12 Anna Salai, Chennai" },
-        "Super Airflow Ltd.": { gst: "33XYZ9876L9Z6", address: "45 Industrial Estate, Coimbatore" },
-        "CoolTech Systems": { gst: "07QWERT1234A8Z1", address: "89 Tech Park, Bangalore" }
-    };
-    function fillVendorDetails() {
-        const vendor = document.getElementById("vendor_id").value;
-        document.getElementById("gst").value = vendorData[vendor]?.gst || "";
-        document.getElementById("address").value = vendorData[vendor]?.address || "";
-    }
-    function fillVendorDetailsEdit() {
-        const vendor = document.getElementById("edit_vendor_id").value;
-        document.getElementById("edit_gst").value = vendorData[vendor]?.gst || "";
-        document.getElementById("edit_address").value = vendorData[vendor]?.address || "";
-    }
+  // Enquiry ID auto fetch
+  $(document).ready(function () {
+    fetch('/get_next_enquiry_id')
+      .then(res => res.json())
+      .then(data => {
+        $('#enquiry_id').val(data.enquiry_id);
+      });
 
-    function fillEditModal(project) {
-        document.getElementById("edit_id").value = project.id;
-        document.getElementById("edit_enquiry_id").value = project.enquiry_id;
-        document.getElementById("edit_quotation").value = project.quotation;
-        document.getElementById("edit_project_location").value = project.project_location;
-        document.getElementById("edit_start_date").value = project.start_date;
-        document.getElementById("edit_end_date").value = project.end_date;
-        document.getElementById("edit_vendor_id").value = project.vendor_id;
-        fillVendorDetailsEdit();
-        document.getElementById("edit_incharge").value = project.incharge;
-        document.getElementById("edit_contact_number").value = project.contact_number;
-        document.getElementById("edit_mail_id").value = project.mail_id;
-        document.getElementById("edit_notes").value = project.notes || "";
-    }
+    // Handle edit button
+    $('.editBtn').click(function () {
+      const p = $(this).data('project');
+      $('#edit_project_id').val(p.id);
+      $('#edit_quotation').val(p.quotation);
+      $('#edit_project_location').val(p.project_location);
+      $('#edit_start_date').val(p.start_date);
+      $('#edit_end_date').val(p.end_date);
+      $('#edit_vendor').val(p.vendor_id);
+      $('#edit_gst').val(p.gst);
+      $('#edit_address').val(p.address);
+      $('#edit_incharge').val(p.incharge);
+      $('#edit_contact').val(p.contact_number);
+      $('#edit_mail').val(p.mail_id);
+      $('#edit_notes').val(p.notes);
+      new bootstrap.Modal(document.getElementById('editModal')).show();
+    });
+  });
 
-    function fillDeleteModal(enquiry_id) {
-        document.getElementById("delete_enquiry_id").textContent = enquiry_id;
-        document.getElementById("delete_enquiry_id_input").value = enquiry_id;
+  function updateVendorFields(select, isEdit = false) {
+    const gst = select.options[select.selectedIndex].getAttribute('data-gst');
+    const address = select.options[select.selectedIndex].getAttribute('data-address');
+    if (isEdit) {
+      document.getElementById('edit_gst').value = gst;
+      document.getElementById('edit_address').value = address;
+    } else {
+      document.getElementById('gstInput').value = gst;
+      document.getElementById('addressInput').value = address;
     }
-
-    function fillMeasurementModal(enquiry_id) {
-        document.getElementById("measurement_enquiry_id").textContent = enquiry_id;
-        document.getElementById("measurement_enquiry_id_input").value = enquiry_id;
-    }
+  }
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
