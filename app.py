@@ -92,6 +92,8 @@ def dashboard():
         return redirect(url_for('login'))
     return render_template('dashboard.html')
 
+
+
 @app.route('/project')
 def project_management():
     if 'user' not in session:
@@ -99,68 +101,104 @@ def project_management():
 
     conn = get_db()
     cur = conn.cursor()
-    cur.execute("SELECT * FROM project ORDER BY id DESC")
+    cur.execute("SELECT * FROM projects ORDER BY id DESC")
     projects = cur.fetchall()
+    cur.execute("SELECT * FROM vendors")
+    vendors = cur.fetchall()
     conn.close()
-    return render_template('project.html', projects=projects, vendors=dummy_vendors)
+    return render_template('project.html', projects=projects, vendors=vendors)
 
 @app.route('/create_project', methods=['POST'])
 def create_project():
-    if 'user' not in session:
-        return redirect(url_for('login'))
-
     conn = get_db()
     cur = conn.cursor()
 
-    # Auto-generate Enquiry ID
-    cur.execute("SELECT COUNT(*) FROM project")
+    cur.execute("SELECT COUNT(*) FROM projects")
     count = cur.fetchone()[0] + 1
-    enquiry_id = f"ve/TN/2526/e{str(count).zfill(3)}"
+    enquiry_id = f"VE/TN/2526/E{str(count).zfill(3)}"
 
-    # Get form data
-    quotation = request.form.get('quotation')
-    location = request.form.get('project_location')
-    start_date = request.form.get('start_date')
-    end_date = request.form.get('end_date')
-    vendor = request.form.get('vendor_id')
-    gst = request.form.get('gst')
-    address = request.form.get('address')
-    incharge = request.form.get('incharge')
-    contact = request.form.get('contact_number')
-    email = request.form.get('mail_id')
-    notes = request.form.get('notes')
+    data = request.form
+    diagram_file = request.files.get('source_diagram')
+    diagram_path = None
 
-    # Handle file upload
-    source_diagram = request.files.get('source_diagram')
-    file_name = ""
-    if source_diagram and source_diagram.filename:
-        file_name = datetime.now().strftime("%Y%m%d%H%M%S_") + source_diagram.filename
-        source_diagram.save(os.path.join(UPLOAD_FOLDER, file_name))
+    if diagram_file and diagram_file.filename:
+        diagram_path = os.path.join("static/uploads", diagram_file.filename)
+        diagram_file.save(diagram_path)
 
-    # Insert into DB
-    cur.execute('''
-        INSERT INTO project (enquiry_id, quotation, location, source_diagram,
-        start_date, end_date, vendor, gst, address,
-        incharge, contact, email, notes)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ''', (
-        enquiry_id, quotation, location, file_name,
-        start_date, end_date, vendor, gst, address,
-        incharge, contact, email, notes
+    cur.execute("""
+        INSERT INTO projects (
+            enquiry_id, quotation, project_location, source_diagram, start_date, end_date,
+            vendor_id, gst, address, incharge, contact_number, mail_id, notes
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (
+        enquiry_id,
+        data.get('quotation'),
+        data.get('project_location'),
+        diagram_path,
+        data.get('start_date'),
+        data.get('end_date'),
+        data.get('vendor_id'),
+        data.get('gst'),
+        data.get('address'),
+        data.get('incharge'),
+        data.get('contact_number'),
+        data.get('mail_id'),
+        data.get('notes')
     ))
-
     conn.commit()
     conn.close()
-    flash("Project added successfully!", "success")
+    flash("Project created successfully!", "success")
     return redirect(url_for('project_management'))
-
 
 @app.route('/edit_project', methods=['POST'])
 def edit_project():
-    # Temporary placeholder
-    flash("Edit project logic not implemented yet.", "warning")
+    conn = get_db()
+    cur = conn.cursor()
+
+    data = request.form
+    project_id = data.get('project_id')
+    diagram_file = request.files.get('source_diagram')
+    diagram_path = data.get('existing_diagram')
+
+    if diagram_file and diagram_file.filename:
+        diagram_path = os.path.join("static/uploads", diagram_file.filename)
+        diagram_file.save(diagram_path)
+
+    cur.execute("""
+        UPDATE projects SET
+            quotation=?, project_location=?, source_diagram=?, start_date=?, end_date=?,
+            vendor_id=?, gst=?, address=?, incharge=?, contact_number=?, mail_id=?, notes=?
+        WHERE id=?
+    """, (
+        data.get('quotation'),
+        data.get('project_location'),
+        diagram_path,
+        data.get('start_date'),
+        data.get('end_date'),
+        data.get('vendor_id'),
+        data.get('gst'),
+        data.get('address'),
+        data.get('incharge'),
+        data.get('contact_number'),
+        data.get('mail_id'),
+        data.get('notes'),
+        project_id
+    ))
+    conn.commit()
+    conn.close()
+    flash("Project updated!", "success")
     return redirect(url_for('project_management'))
 
+@app.route('/delete_project', methods=['POST'])
+def delete_project():
+    project_id = request.form.get('project_id')
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("DELETE FROM projects WHERE id = ?", (project_id,))
+    conn.commit()
+    conn.close()
+    flash("Project deleted!", "danger")
+    return redirect(url_for('project_management'))
 # -------------------- Run --------------------
 
 if __name__ == '__main__':
