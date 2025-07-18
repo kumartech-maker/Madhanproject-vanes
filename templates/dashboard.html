@@ -1,10 +1,86 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Dashboard</title>
+    <title>Dashboard</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f0f2f5;
+            padding: 30px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: auto;
+            background: #fff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #333;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .module {
+            background: #007bff;
+            color: white;
+            text-align: center;
+            padding: 20px;
+            border-radius: 10px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+
+        .module:hover {
+            background: #0056b3;
+        }
+
+        .logout {
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        .logout a {
+            color: red;
+            font-weight: bold;
+            text-decoration: none;
+        }
+
+        .welcome {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 18px;
+            color: #555;
+        }
+    </style>
 </head>
 <body>
-  <h2>Welcome, {{ name }}!</h2>
-  <a href="{{ url_for('logout') }}">Logout</a>
+    <div class="container">
+        <h2>Dashboard</h2>
+        <div class="welcome">Welcome, {{ name }}!</div>
+
+        <div class="grid">
+            <a href="#" class="module">Project Management</a>
+            <a href="#" class="module">Production</a>
+            <a href="#" class="module">Vendor Management</a>
+            <a href="#" class="module">Summary Reports</a>
+            <a href="#" class="module">Employee Management</a>
+            <a href="#" class="module">Attendance</a>
+        </div>
+
+        <div class="logout">
+            <a href="{{ url_for('logout') }}">Logout</a>
+        </div>
+    </div>
 </body>
 </html>
