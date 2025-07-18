@@ -60,13 +60,15 @@ def home():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        uname = request.form['username']
-        pwd = request.form['password']
-        if uname == 'admin' and pwd == 'admin':
-            session['user'] = uname
+        email = request.form.get('email')
+        password = request.form.get('password')
+
+        if email == 'admin@example.com' and password == 'admin123':
+            session['user'] = email
             return redirect(url_for('dashboard'))
         else:
-            flash("Invalid credentials", "danger")
+            flash('Invalid credentials', 'error')
+            return redirect(url_for('login'))
     return render_template('login.html')
 
 @app.route('/logout')
