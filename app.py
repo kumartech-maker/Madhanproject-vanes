@@ -94,6 +94,44 @@ def project_management():
     conn.close()
     return render_template('project.html', projects=projects, vendors=dummy_vendors)
 
+@app.route('/create_project', methods=['POST'])
+def create_project():
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("SELECT COUNT(*) FROM projects")
+    count = cur.fetchone()[0] + 1
+    enquiry_id = f"ve/TN/2526/e{str(count).zfill(3)}"
+    print("Generated Enquiry ID:", enquiry_id)
+
+    quotation = request.form.get('quotation')
+    project_location = request.form.get('project_location')
+    source_diagram = request.files.get('source_diagram')
+    start_date = request.form.get('start_date')
+    end_date = request.form.get('end_date')
+    vendor_id = request.form.get('vendor_id')
+    gst = request.form.get('gst')
+    address = request.form.get('address')
+    incharge = request.form.get('incharge')
+    contact_number = request.form.get('contact_number')
+    mail_id = request.form.get('mail_id')
+    notes = request.form.get('notes')
+
+    diagram_path = None
+    if source_diagram and source_diagram.filename:
+        diagram_path = os.path.join("static/uploads", source_diagram.filename)
+        source_diagram.save(diagram_path)
+
+    cur.execute("""
+        INSERT INTO projects (enquiry_id, quotation, project_location, source_diagram, start_date, end_date, vendor_id, gst, address, incharge, contact_number, mail_id, notes)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    """, (enquiry_id, quotation, project_location, diagram_path, start_date, end_date, vendor_id, gst, address, incharge, contact_number, mail_id, notes))
+
+    conn.commit()
+    conn.close()
+    flash('Project added successfully!', 'success')
+    return redirect(url_for('project_management'))
+
 @app.route('/add_project', methods=['POST'])
 def add_project():
     if 'user' not in session:
