@@ -154,6 +154,13 @@ def create_project():
     flash("Project added successfully!", "success")
     return redirect(url_for('project_management'))
 
+
+@app.route('/edit_project', methods=['POST'])
+def edit_project():
+    # Temporary placeholder
+    flash("Edit project logic not implemented yet.", "warning")
+    return redirect(url_for('project_management'))
+
 # -------------------- Run --------------------
 
 if __name__ == '__main__':
